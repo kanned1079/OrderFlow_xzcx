@@ -1,0 +1,13 @@
+mysql_config:
+  protocol: "tcp"
+  host: "api.ikanned.com"
+  port: 24407
+  username: "test_stay"
+  password: "TcRSI4UYQN6wP6XWE7"
+  database: "test_stay_db"
+wx_app:
+  app_id: "wxid"
+  app_secret: "ferghnytejtd"
+runtime:
+  jwt_secret: "Og6zf&J#OJTkw4blmpeQ_(hx~!1p%r%fCq%Stv&^fL%6@4kL0i#l$O7(4ZddI71s)_&+KuX"
+  access_token_expired_in: 168
