@@ -2,6 +2,6 @@ package routers
 
 import "github.com/gin-gonic/gin"
 
-func (this *GatewayApp) RegisterMasterRoutes(v1 *gin.RouterGroup) {
+func (this *GatewayApp) RegisterTraderRoutes(v1 *gin.RouterGroup) {
 
 }

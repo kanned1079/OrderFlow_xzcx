@@ -12,7 +12,7 @@ func (this *GatewayApp) StartApiGateway() {
 
 	this.RegisterPublicRoutes(v1)
 	this.RegisterAdminRoutes(v1)
-	this.RegisterMasterRoutes(v1)
+	this.RegisterTraderRoutes(v1)
 	this.RegisterUserRoutes(v1)
 
 	logger.PrintSuccess("routers registered successfully.")

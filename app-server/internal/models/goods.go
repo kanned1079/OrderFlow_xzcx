@@ -5,18 +5,18 @@ import (
 	"time"
 )
 
-type Merchant struct {
-	Id           int64          `json:"id" gorm:"primary_key;AUTO_INCREMENT"` // 数据表id
-	UserId       int64          `json:"user_id"`                              // 对应用户的id
-	MerchantName string         `json:"merchant_name"`                        // 商户名
-	Description  string         `json:"description"`                          // 商户描述
-	LogoUrl      string         `json:"logo_url"`                             // 商户Logo图片
-	Address      string         `json:"address"`                              // 商户地址
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"Updated_at"`
-	DeletedAt    gorm.DeletedAt `json:"deleted_at"`
+type Goods struct {
+	Id          int64          `json:"id" gorm:"primary_key;AUTO_INCREMENT"` // 数据表id
+	MerchantId  int64          `json:"merchant_id"`                          // 对应商户id
+	Description string         `json:"description"`                          // 商品描述
+	LogoUrl     string         `json:"logo_url"`                             // 商品Logo图片
+	Price       float32        `json:"price"`                                // 价格
+	Residue     int64          `json:"residue"`                              // 剩余库存
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"Updated_at"`
+	DeletedAt   gorm.DeletedAt `json:"deleted_at"`
 }
 
-func (Merchant) TableName() string {
-	return "a_merchant"
+func (Goods) TableName() string {
+	return "a_goods"
 }

@@ -7,18 +7,18 @@ import (
 
 type User struct {
 	Id          int64          `json:"id" gorm:"primary_key;AUTO_INCREMENT"` // 数据表id
-	PlatformId  string         `json:"platform_id"`                          // 美团id
-	AppOpenId   string         `json:"app_open_id" gorm:"unique"`            // 小程序appId
-	SessionKey  string         `json:"session_key"`
-	PhoneNumber string         `json:"phone_number"`
-	Name        string         `json:"name"`
-	Role        string         `json:"role"` // 用户v0 站长v1 管理v10
-	LastLoginAt time.Time      `json:"last_login_at" gorm:"type:timestamp"`
-	CreatedAt   time.Time      `json:"created_at" gorm:"type:timestamp"`
-	UpdatedAt   time.Time      `json:"Updated_at" gorm:"type:timestamp"`
-	DeletedAt   gorm.DeletedAt `json:"deleted_at" gorm:"type:timestamp"`
+	PhoneNumber string         `json:"phone_number"`                         // 手机号
+	Username    string         `json:"username"`                             // 用户名
+	Role        string         `json:"role"`                                 // 用户user 商家trader 管理admin
+	Password    string         `json:"password"`                             // 用户密码
+	AvatarUrl   string         `json:"avatar_url"`                           // 用户头像URL
+	Status      bool           `json:"status"`                               // 账户状态
+	LastLoginAt *time.Time     `json:"last_login_at"`                        // 上一次登录的时间
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"Updated_at"`
+	DeletedAt   gorm.DeletedAt `json:"deleted_at"`
 }
 
 func (User) TableName() string {
-	return "s_user"
+	return "a_user"
 }

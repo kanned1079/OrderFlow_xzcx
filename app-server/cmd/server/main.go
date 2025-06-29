@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	appPkg "stay-server/app"
 	"stay-server/internal/config"
 	"stay-server/internal/dao"
 	"stay-server/internal/models"
 	"stay-server/utils"
+	"strings"
 )
 
 func init() {
@@ -18,17 +20,64 @@ func init() {
 
 func main() {
 	var app = appPkg.NewApp(1, gin.DebugMode)
-	fmt.Print(app.InstanceId)
+	//fmt.Print(app.InstanceId)
+
+	//var logger utils.Logger
+	//
+	//logger.PrintInfo("count", count)
+	//logger.PrintWarn("jwt secret: ", config.AppCfg.Runtime.JwtSecret)
+	checkAdminExist()
+
+	app.GatewayInst.StartApiGateway()
+}
+
+func checkAdminExist() {
+	var myLogger utils.Logger
 	var count int64
 	err := dao.DbDao.Model(&models.User{}).Count(&count).Error
 	if err != nil {
-		log.Fatal(err)
+		log.Panicln(err)
 	}
+	if count <= 0 {
+		myLogger.PrintWarn("你需要先设置一个管理员")
+		var phoneNumber, inputPassword string
 
-	var logger utils.Logger
+		fmt.Print("请输入管理员手机号: ")
+		if _, err := fmt.Scanln(&phoneNumber); err != nil {
+			log.Panicln("手机号读取失败:", err)
+		}
+		phoneNumber = strings.TrimSpace(phoneNumber)
+		if len(phoneNumber) != 11 {
+			log.Panicln("手机号必须为 11 位数字")
+		}
 
-	logger.PrintInfo("count", count)
-	logger.PrintWarn("jwt secret: ", config.AppCfg.Runtime.JwtSecret)
+		fmt.Print("请输入管理员密码: ")
+		if _, err := fmt.Scanln(&inputPassword); err != nil {
+			log.Panicln("密码读取失败:", err)
+		}
+		inputPassword = strings.TrimSpace(inputPassword)
+		if len(inputPassword) < 6 {
+			log.Panicln("密码长度不能小于 6 位")
+		}
 
-	app.GatewayInst.StartApiGateway()
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(inputPassword), bcrypt.DefaultCost)
+		if err != nil {
+			log.Panicln("密码加密失败:", err)
+		}
+
+		if err := dao.DbDao.Create(&models.User{
+			Username:    "sysadmin",
+			Role:        "admin",
+			Status:      true,
+			PhoneNumber: phoneNumber,
+			Password:    string(hashedPassword),
+		}).Error; err != nil {
+			log.Panicln("创建管理员失败:", err)
+		}
+
+		myLogger.PrintInfo("你设置的是", phoneNumber)
+
+	} else {
+		myLogger.PrintSuccess("管理员存在 启动网关服务...")
+	}
 }
