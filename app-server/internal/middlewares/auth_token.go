@@ -35,3 +35,20 @@ func RequireRole(requiredRoles ...string) gin.HandlerFunc {
 		ctx.Abort()
 	}
 }
+
+func RequireAuth() gin.HandlerFunc {
+	var u utils.Utils
+	return func(ctx *gin.Context) {
+		claims, err := u.ExtractTokenClaims(ctx)
+		if err != nil {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"message": "未授权: " + err.Error()})
+			ctx.Abort()
+			return
+		}
+
+		// ✅ 可选：将 claims 放进上下文，方便后续使用
+		ctx.Set("claims", claims)
+
+		ctx.Next()
+	}
+}

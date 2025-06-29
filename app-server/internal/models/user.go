@@ -15,7 +15,7 @@ type User struct {
 	Status      bool           `json:"status"`                               // 账户状态
 	LastLoginAt *time.Time     `json:"last_login_at"`                        // 上一次登录的时间
 	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"Updated_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `json:"deleted_at"`
 }
 

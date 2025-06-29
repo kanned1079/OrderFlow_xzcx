@@ -21,6 +21,7 @@ profile.cov
 # vendor/
 
 /.idea/
+uploads/
 
 # Go workspace file
 go.work

@@ -1,0 +1,41 @@
+package models
+
+import (
+	"gorm.io/gorm"
+	"time"
+)
+
+type Order struct {
+	OrderId    string         `json:"order_id" gorm:"primary_key;"` // 后端服务器生成
+	UserId     int64          `json:"user_id"`                      // 对应用户的id
+	MerchantId int64          `json:"merchant_id"`                  // 商户id
+	Status     string         `json:"status"`                       // pending_accept processing completed_unreviewed completed_reviewed cancelled
+	CreatedAt  time.Time      `json:"created_at"`
+	UpdatedAt  time.Time      `json:"Updated_at"`
+	DeletedAt  gorm.DeletedAt `json:"deleted_at"`
+}
+
+type OrderItem struct {
+	ID         int64   `gorm:"primaryKey;autoIncrement" json:"id"`
+	OrderID    string  `gorm:"index" json:"order_id"`    // 所属订单
+	UserID     int64   `gorm:"index" json:"user_id"`     // 冗余，方便查询
+	MerchantID int64   `gorm:"index" json:"merchant_id"` // 冗余，方便统计/过滤
+	GoodsID    int64   `gorm:"index" json:"goods_id"`    // 商品ID
+	GoodsName  string  `json:"goods_name"`               // 商品快照（下单时保存）
+	LogoUrl    string  `json:"logo_url"`
+	Price      float64 `json:"price"`
+	Quantity   int     `json:"quantity"`
+	Total      float64 `json:"total"` // Price * Quantity
+
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at"`
+}
+
+func (Order) TableName() string {
+	return "a_order"
+}
+
+func (OrderItem) TableName() string {
+	return "a_order_item"
+}
