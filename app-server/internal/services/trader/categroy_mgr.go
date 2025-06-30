@@ -92,9 +92,14 @@ func (this *TraderServices) EditCategory(ctx *gin.Context) {
 	}
 
 	var category models.Category
-	result := dao.DbDao.Where("merchant_id = ? AND title = ?", post.MerchantId, post.CategoryTitle).First(&category)
+	result := dao.DbDao.Where("merchant_id = ? AND id = ?", post.MerchantId, post.CategoryId).First(&category)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "分类不存在"})
+		return
+	}
+
+	if post.CategoryTitle == "" || category.Title == post.CategoryTitle {
+		ctx.JSON(http.StatusConflict, gin.H{"message": "分类标签重复或不合法"})
 		return
 	}
 
@@ -129,6 +134,17 @@ func (this *TraderServices) DeleteCategory(ctx *gin.Context) {
 	result := dao.DbDao.Where("id = ? AND merchant_id = ?", categoryId, mId).First(&category)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "分类不存在或无权删除"})
+		return
+	}
+
+	var activeGoodsCount int64
+	if err := dao.DbDao.Model(&models.Goods{}).Where("category_id = ?", categoryId).Count(&activeGoodsCount).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "查询关联商品失败"})
+		return
+	}
+
+	if activeGoodsCount > 0 {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "有关联该分类标签的商品存在，您需要先删除对应的商品或修改其分类标签。"})
 		return
 	}
 

@@ -20,4 +20,10 @@ func (this *GatewayApp) RegisterTraderRoutes(v1 *gin.RouterGroup) {
 	traderGrp.PUT("/category", traderService.EditCategory)
 	traderGrp.DELETE("/category/:m_id/:id", traderService.DeleteCategory)
 
+	traderGrp.GET("order", traderService.GetOrderList)
+	traderGrp.GET("order/:order_id", traderService.GetOrderById)
+	traderGrp.PUT("/order/cancel", traderService.CancelOrderByTrader)
+	traderGrp.PUT("/order/accept", traderService.AcceptOrderByTrader)
+	traderGrp.PUT("/order/complete", traderService.CompleteOrderByTrader)
+
 }

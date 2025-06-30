@@ -10,4 +10,5 @@ func (this *DaoInstance) migrateTables() {
 	DbDao.AutoMigrate(&models.OrderItem{})
 	DbDao.AutoMigrate(&models.Comment{})
 	DbDao.AutoMigrate(&models.Category{})
+	DbDao.AutoMigrate(&models.Address{})
 }

@@ -82,6 +82,13 @@ func (this *TraderServices) AddNewGoods(ctx *gin.Context) {
 		return
 	}
 
+	//postData.MerchantId // 商户id
+	//// 查询该商户信息
+	//var existingMerchant models.Merchant
+	//
+	//existingMerchant.UserId // 查询该用户id
+	//
+
 	// 检查商品是否已存在（同一商户下不能重名）
 	var existing models.Goods
 	result := dao.DbDao.Where("merchant_id = ? AND goods_name = ?", postData.MerchantId, postData.GoodsName).First(&existing)
@@ -98,7 +105,7 @@ func (this *TraderServices) AddNewGoods(ctx *gin.Context) {
 	}
 
 	// 查询category表 如果存在才可以添加 否责500 提示错误
-	exists, err := this.categoryExistsForMerchant(postData.MerchantId, postData.CategoryId)
+	exists, err := this.categoryExistsForMerchant(postData.CategoryId, postData.MerchantId)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "分类验证失败: " + err.Error()})
 		return
@@ -166,7 +173,7 @@ func (this *TraderServices) EditGoodsInfo(ctx *gin.Context) {
 		return
 	}
 
-	exists, err := this.categoryExistsForMerchant(postData.MerchantId, postData.CategoryId)
+	exists, err := this.categoryExistsForMerchant(postData.CategoryId, postData.MerchantId)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "分类验证失败: " + err.Error()})
 		return

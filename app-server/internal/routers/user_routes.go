@@ -12,4 +12,10 @@ func (this *GatewayApp) RegisterUserRoutes(v1 *gin.RouterGroup) {
 
 	userGroup.GET("merchants", userService.FetchMerchants)
 
+	userGroup.GET("goods", userService.FetchGoodsListAsCategory)
+
+	userGroup.GET("order/:order_id", userService.GetOrderDetails)
+	userGroup.POST("order", userService.CommitNewOrder)
+	userGroup.PUT("order", userService.CancelOrderByUser)
+
 }

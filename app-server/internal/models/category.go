@@ -6,7 +6,7 @@ import (
 )
 
 type Category struct {
-	ID         int64  `gorm:"primaryKey;autoIncrement" json:"id"`
+	Id         int64  `gorm:"primaryKey;autoIncrement" json:"id"`
 	MerchantId int64  `gorm:"index" json:"merchant_id"`
 	Title      string `json:"title"`
 
