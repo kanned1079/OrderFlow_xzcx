@@ -11,3 +11,4 @@ wx_app:
 runtime:
   jwt_secret: "Og6zf&J#OJTkw4blmpeQ_(hx~!1p%r%fCq%Stv&^fL%6@4kL0i#l$O7(4ZddI71s)_&+KuX"
   access_token_expired_in: 720
+  listening_port: "8088"

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"stay-server/internal/config"
 	"stay-server/internal/middlewares"
 	"stay-server/utils"
 	"time"
@@ -14,6 +15,11 @@ import (
 
 func (this *GatewayApp) StartApiGateway() {
 	var logger utils.Logger
+	logger.PrintInfo("Run mode: ", gin.Mode())
+	if gin.Mode() != gin.ReleaseMode {
+		logger.PrintWarn("Running in \"debug\" or \"test\" mode. Switch to \"release\" mode in production.")
+	}
+
 	apiPrefix := this.Router.Group("/api")
 	v1 := apiPrefix.Group("/v1")
 
@@ -57,10 +63,11 @@ func (this *GatewayApp) StartApiGateway() {
 		})
 	})
 
-	logger.PrintSuccess("routers registered successfully.")
+	logger.PrintSuccess("路由条目注册成功 Routers registered successfully.")
 
-	if err := this.Router.Run(":8088"); err != nil {
-		log.Println(err)
+	listenPort := config.AppCfg.Runtime.ListeningPort
+	logger.PrintInfo("当前设置网关运行端口为 ", listenPort)
+	if err := this.Router.Run(fmt.Sprintf(":%s", listenPort)); err != nil {
+		log.Panicln(err)
 	}
-
 }

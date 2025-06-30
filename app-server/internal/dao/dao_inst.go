@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"log"
 	"stay-server/internal/config"
+	"stay-server/utils"
 )
 
 var DbDao *gorm.DB
@@ -42,10 +42,11 @@ func NewDaoInstance(id int32) *DaoInstance {
 	if err != nil {
 		panic(fmt.Sprintf("failed to open database: %v", err))
 	}
-	if DbDao.Exec(`SELECT 1+1;`).Error != nil {
+	if DbDao.Exec(`SELECT 1 + 1;`).Error != nil {
 		panic(fmt.Sprintf("failed to connect to database: %v", err))
 	}
-	log.Println("Server is connected and tested.")
+	utils.Logger{}.PrintSuccess("数据库服务器已连接 Server is connected and tested.")
+	//log.Println("Server is connected and tested.")
 	daoInst.migrateTables()
 	return daoInst
 }

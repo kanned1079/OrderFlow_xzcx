@@ -5,30 +5,21 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"log"
+	"runtime"
 	appPkg "stay-server/app"
 	"stay-server/internal/config"
 	"stay-server/internal/dao"
 	"stay-server/internal/models"
 	"stay-server/utils"
 	"strings"
+	"sync"
+	"time"
 )
 
 func init() {
+	showSystemConfig()
+
 	config.AppCfg.ReadConfigFile("config/config.yaml")
-
-}
-
-func main() {
-	var app = appPkg.NewApp(1, gin.DebugMode)
-	//fmt.Print(app.InstanceId)
-
-	//var logger utils.Logger
-	//
-	//logger.PrintInfo("count", count)
-	//logger.PrintWarn("jwt secret: ", config.AppCfg.Runtime.JwtSecret)
-	checkAdminExist()
-
-	app.GatewayInst.StartApiGateway()
 }
 
 func checkAdminExist() {
@@ -78,6 +69,35 @@ func checkAdminExist() {
 		myLogger.PrintInfo("你设置的是", phoneNumber)
 
 	} else {
-		myLogger.PrintSuccess("管理员存在 启动网关服务...")
+		myLogger.PrintSuccess("已设置管理员 Starting gateway api services...")
 	}
+}
+
+func main() {
+	var app = appPkg.NewApp(1, gin.TestMode)
+	checkAdminExist()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.GatewayInst.StartApiGateway()
+	}()
+
+	//wg.Add(1)
+	//go func() {
+	//	var myLogger utils.Logger
+	//	for {
+	//		myLogger.PrintInfo("Current goroutine count: ", runtime.NumGoroutine())
+	//		time.Sleep(time.Second * 10)
+	//	}
+	//}()
+	wg.Wait()
+}
+
+func showSystemConfig() {
+	var myLogger utils.Logger
+	myLogger.PrintInfo(fmt.Sprintf("OS(Arch): %s %s", runtime.GOOS, runtime.GOARCH))
+	myLogger.PrintInfo(fmt.Sprintf("CPU(s): %v", runtime.NumCPU()))
+	myLogger.PrintInfo(fmt.Sprintf("当前时间: %v", time.Now().Local()))
 }

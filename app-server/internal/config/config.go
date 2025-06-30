@@ -23,4 +23,5 @@ type WxApp struct {
 type Runtime struct {
 	JwtSecret            string `yaml:"jwt_secret"`
 	AccessTokenExpiredIn int    `yaml:"access_token_expired_in"`
+	ListeningPort        string `yaml:"listening_port"`
 }
