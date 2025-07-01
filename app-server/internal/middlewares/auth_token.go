@@ -46,7 +46,7 @@ func RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		// ✅ 可选：将 claims 放进上下文，方便后续使用
+		// 将 claims 放进上下文 后续使用
 		ctx.Set("claims", claims)
 
 		ctx.Next()

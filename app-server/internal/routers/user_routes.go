@@ -18,4 +18,8 @@ func (this *GatewayApp) RegisterUserRoutes(v1 *gin.RouterGroup) {
 	userGroup.POST("order", userService.CommitNewOrder)
 	userGroup.PUT("order", userService.CancelOrderByUser)
 
+	userGroup.POST("comment", userService.CommitCommentByOrderId)
+	userGroup.GET("comment/:m_id", userService.FetchCommentListByMId)
+	userGroup.DELETE("comment/:c_id", userService.DeleteMyComment)
+
 }

@@ -18,7 +18,6 @@ import (
 
 func init() {
 	showSystemConfig()
-
 	config.AppCfg.ReadConfigFile("config/config.yaml")
 }
 
@@ -74,7 +73,7 @@ func checkAdminExist() {
 }
 
 func main() {
-	var app = appPkg.NewApp(1, gin.TestMode)
+	var app = appPkg.NewApp(1, gin.DebugMode)
 	checkAdminExist()
 
 	var wg sync.WaitGroup
@@ -84,14 +83,6 @@ func main() {
 		app.GatewayInst.StartApiGateway()
 	}()
 
-	//wg.Add(1)
-	//go func() {
-	//	var myLogger utils.Logger
-	//	for {
-	//		myLogger.PrintInfo("Current goroutine count: ", runtime.NumGoroutine())
-	//		time.Sleep(time.Second * 10)
-	//	}
-	//}()
 	wg.Wait()
 }
 
