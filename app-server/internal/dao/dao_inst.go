@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"stay-server/internal/config"
 	"stay-server/utils"
 )
@@ -38,6 +39,7 @@ func NewDaoInstance(id int32) *DaoInstance {
 		SkipInitializeWithVersion: true,
 	}), &gorm.Config{
 		SkipDefaultTransaction: false,
+		Logger:                 logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
 		panic(fmt.Sprintf("failed to open database: %v", err))

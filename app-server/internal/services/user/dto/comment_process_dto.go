@@ -3,6 +3,7 @@ package dto
 type CommitCommentByOrderIdRequestDto struct {
 	OrderId     string   `json:"order_id"`
 	UserId      int64    `json:"user_id"`
+	Stars       int8     `json:"stars"`
 	CommentText string   `json:"comment_text"`
 	ImagesUrls  []string `json:"images_urls"`
 }

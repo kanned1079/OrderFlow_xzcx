@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"log"
 	"net/http"
 	"stay-server/internal/dao"
 	"stay-server/internal/models"
@@ -56,6 +57,17 @@ func (this *UserServices) CommitNewOrder(ctx *gin.Context) {
 
 	if len(postData.GoodsList) == 0 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "商品列表不能为空"})
+		return
+	}
+
+	log.Print("m_id: ", postData.MerchantId)
+	var merchantNum int64
+	if err := dao.DbDao.Model(&models.Merchant{}).Where("id = ?", postData.MerchantId).Count(&merchantNum).Error; err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "商户信息查询错误: " + err.Error()})
+		return
+	}
+	if merchantNum <= 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "商户不存在"})
 		return
 	}
 

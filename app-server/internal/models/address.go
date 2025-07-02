@@ -8,6 +8,7 @@ import (
 type Address struct {
 	Id          int64          `gorm:"primaryKey;autoIncrement" json:"id"`
 	UserId      int64          `gorm:"index" json:"user_id"`
+	User        User           `gorm:"foreignKey:UserId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"` // 外键关联
 	FullName    string         `json:"full_name"`
 	PhoneNumber string         `json:"phone_number"`
 	FullAddress string         `json:"full_address"`

@@ -15,7 +15,7 @@ import (
 )
 
 // CommitCommentByOrderId 上传评论
-func (UserServices) CommitCommentByOrderId(ctx *gin.Context) {
+func (this *UserServices) CommitCommentByOrderId(ctx *gin.Context) {
 	var commitCommentRequestDto dto.CommitCommentByOrderIdRequestDto
 
 	// 1. 参数绑定校验
@@ -26,6 +26,11 @@ func (UserServices) CommitCommentByOrderId(ctx *gin.Context) {
 
 	if strings.Trim(commitCommentRequestDto.CommentText, " ") == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "评论内容不能为空"})
+		return
+	}
+
+	if commitCommentRequestDto.Stars <= 0 || commitCommentRequestDto.Stars > 5 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "非法评分"})
 		return
 	}
 
@@ -73,12 +78,20 @@ func (UserServices) CommitCommentByOrderId(ctx *gin.Context) {
 		OrderId:     existingOrder.OrderId,
 		UserId:      commitCommentRequestDto.UserId,
 		MerchantId:  existingOrder.MerchantId,
+		Stars:       commitCommentRequestDto.Stars,
 		CommentText: commitCommentRequestDto.CommentText,
 		ImagesUrls:  jsonImageUrlList,
 	}
 	if err := tx.Create(&newComment).Error; err != nil {
 		tx.Rollback()
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "评论保存失败: " + err.Error()})
+		return
+	}
+
+	// 6.5. 更新商家评分
+	if err := this.updateMerchantStars(tx, existingOrder.MerchantId, commitCommentRequestDto.Stars); err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "评分更新失败: " + err.Error()})
 		return
 	}
 
@@ -175,6 +188,45 @@ func (this *UserServices) FetchCommentbyId(ctx *gin.Context) {
 	})
 }
 
+//func (this *UserServices) DeleteMyComment(ctx *gin.Context) {
+//	commentIdParam := ctx.Param("c_id")
+//	commentId, err := strconv.ParseInt(commentIdParam, 10, 64)
+//	if err != nil {
+//		ctx.JSON(http.StatusBadRequest, gin.H{"message": "非法评论ID"})
+//		return
+//	}
+//
+//	var existingComment models.Comment
+//	if result := dao.DbDao.Model(&models.Comment{}).Where("id = ?", commentId).First(&existingComment); errors.Is(result.Error, gorm.ErrRecordNotFound) {
+//		ctx.JSON(http.StatusNotFound, gin.H{"message": "没有找到指定的评论，该评论是否不存在或已被删除。"})
+//		return
+//	} else if result.Error != nil {
+//		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "查询评论失败: " + err.Error()})
+//		return
+//	}
+//
+//	if time.Now().Sub(existingComment.CreatedAt) > time.Hour*3 {
+//		ctx.JSON(http.StatusRequestTimeout, gin.H{
+//			"message": "已超出删除评论的有效时间（3h）,不可操作。",
+//		})
+//		return
+//	}
+//
+//	if delResult := dao.DbDao.Model(&models.Comment{}).Delete(&existingComment); delResult.RowsAffected == 0 && delResult.Error != nil {
+//		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "删除评论失败: " + delResult.Error.Error()})
+//		return
+//	}
+//
+//	// 重新计算商家评分
+//	//this.decreaseMerchantStars()
+//
+//	ctx.JSON(http.StatusOK, gin.H{
+//		"message":    "评论已经删除",
+//		"comment_id": existingComment.Id,
+//	})
+//
+//}
+
 func (this *UserServices) DeleteMyComment(ctx *gin.Context) {
 	commentIdParam := ctx.Param("c_id")
 	commentId, err := strconv.ParseInt(commentIdParam, 10, 64)
@@ -183,28 +235,61 @@ func (this *UserServices) DeleteMyComment(ctx *gin.Context) {
 		return
 	}
 
+	// 开启事务
+	tx := dao.DbDao.Begin()
+	if tx.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "数据库事务开启失败"})
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "服务器内部错误"})
+		}
+	}()
+
 	var existingComment models.Comment
-	if result := dao.DbDao.Model(&models.Comment{}).Where("id = ?", commentId).First(&existingComment); errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	if result := tx.Where("id = ?", commentId).First(&existingComment); errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		tx.Rollback()
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "没有找到指定的评论，该评论是否不存在或已被删除。"})
 		return
 	} else if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "查询评论失败: " + err.Error()})
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "查询评论失败: " + result.Error.Error()})
 		return
 	}
 
-	if time.Now().Sub(existingComment.CreatedAt) > time.Hour*3 {
+	// 限时删除
+	if time.Since(existingComment.CreatedAt) > 3*time.Hour {
+		tx.Rollback()
 		ctx.JSON(http.StatusRequestTimeout, gin.H{
 			"message": "已超出删除评论的有效时间（3h）,不可操作。",
 		})
+		return
 	}
 
-	if delResult := dao.DbDao.Model(&models.Comment{}).Delete(&existingComment); delResult.RowsAffected == 0 && delResult.Error != nil {
+	// 删除评论
+	if delResult := tx.Delete(&existingComment); delResult.RowsAffected == 0 || delResult.Error != nil {
+		tx.Rollback()
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "删除评论失败: " + delResult.Error.Error()})
+		return
+	}
+
+	// 更新商家评分
+	if err := this.decreaseMerchantStars(tx, existingComment.MerchantId, existingComment.Stars); err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "更新评分失败: " + err.Error()})
+		return
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "事务提交失败: " + err.Error()})
+		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"message":    "评论已经删除",
+		"message":    "评论已经删除，并更新评分",
 		"comment_id": existingComment.Id,
 	})
-
 }
