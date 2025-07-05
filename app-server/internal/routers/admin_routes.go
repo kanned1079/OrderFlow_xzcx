@@ -15,4 +15,6 @@ func (this *GatewayApp) RegisterAdminRoutes(v1 *gin.RouterGroup) {
 	adminGrp.DELETE("merchants/:id", adminService.DeleteMerchant)
 
 	adminGrp.GET("/traders", adminService.FetchAllTraders)
+
+	adminGrp.GET("/statistic", adminService.FetchAdminDashboardStatistic)
 }
