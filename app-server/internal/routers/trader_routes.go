@@ -26,4 +26,6 @@ func (this *GatewayApp) RegisterTraderRoutes(v1 *gin.RouterGroup) {
 	traderGrp.PUT("/order/accept", traderService.AcceptOrderByTrader)
 	traderGrp.PUT("/order/complete", traderService.CompleteOrderByTrader)
 
+	traderGrp.GET("/statistic/:m_id", traderService.FetchMerchantStatistic)
+
 }

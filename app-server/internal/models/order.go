@@ -28,6 +28,8 @@ type Order struct {
 	AddressId int64   `json:"address_id" gorm:"not null"`
 	Address   Address `gorm:"foreignKey:AddressId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"-"`
 
+	TotalAmount float32 `json:"total_amount" gorm:"type:decimal(10,2)"`
+
 	Status        string `json:"status"`
 	FailureReason string `json:"failure_reason"`
 

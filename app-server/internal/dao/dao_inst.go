@@ -39,7 +39,7 @@ func NewDaoInstance(id int32) *DaoInstance {
 		SkipInitializeWithVersion: true,
 	}), &gorm.Config{
 		SkipDefaultTransaction: false,
-		Logger:                 logger.Default.LogMode(logger.Info),
+		Logger:                 logger.Default.LogMode(logger.Warn),
 	})
 	if err != nil {
 		panic(fmt.Sprintf("failed to open database: %v", err))

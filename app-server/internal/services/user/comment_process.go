@@ -116,6 +116,7 @@ func (this *UserServices) CommitCommentByOrderId(ctx *gin.Context) {
 	})
 }
 
+// FetchCommentListByMId 通过商户的Id来查询评论列表
 func (UserServices) FetchCommentListByMId(ctx *gin.Context) {
 	mIdParam := ctx.Param("c_id")
 	merchantId, err := strconv.ParseInt(mIdParam, 10, 64)
@@ -168,6 +169,7 @@ func (UserServices) FetchCommentListByMId(ctx *gin.Context) {
 	})
 }
 
+// FetchCommentbyId 通过评论的Id来获取评论细节
 func (this *UserServices) FetchCommentbyId(ctx *gin.Context) {
 	commentIdParam := ctx.Param("c_id")
 	commentId, err := strconv.ParseInt(commentIdParam, 10, 64)

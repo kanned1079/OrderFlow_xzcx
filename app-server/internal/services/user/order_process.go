@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"log"
 	"net/http"
 	"stay-server/internal/dao"
 	"stay-server/internal/models"
@@ -47,7 +46,7 @@ func (this *UserServices) GetOrderDetails(ctx *gin.Context) {
 	})
 }
 
-// CommitNewOrder 用户提交新订单
+// CommitNewOrder 提交新的订单
 func (this *UserServices) CommitNewOrder(ctx *gin.Context) {
 	var postData dto.UserCommitOrderRequestDto
 	if err := ctx.ShouldBindJSON(&postData); err != nil {
@@ -60,9 +59,10 @@ func (this *UserServices) CommitNewOrder(ctx *gin.Context) {
 		return
 	}
 
-	log.Print("m_id: ", postData.MerchantId)
+	// 验证商户是否存在
 	var merchantNum int64
-	if err := dao.DbDao.Model(&models.Merchant{}).Where("id = ?", postData.MerchantId).Count(&merchantNum).Error; err != nil {
+	if err := dao.DbDao.Model(&models.Merchant{}).
+		Where("id = ?", postData.MerchantId).Count(&merchantNum).Error; err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "商户信息查询错误: " + err.Error()})
 		return
 	}
@@ -73,27 +73,31 @@ func (this *UserServices) CommitNewOrder(ctx *gin.Context) {
 
 	orderId := this.generateOrderId(postData.UserId, postData.MerchantId)
 	newOrder := models.Order{
-		OrderId:    orderId,
-		UserId:     postData.UserId,
-		MerchantId: postData.MerchantId,
-		AddressId:  postData.AddressId,
-		Status:     "pending_accept", // pending_accept processing completed_unreviewed completed_reviewed cancelled
+		OrderId:     orderId,
+		UserId:      postData.UserId,
+		MerchantId:  postData.MerchantId,
+		AddressId:   postData.AddressId,
+		TotalAmount: 0.00,
+		Status:      "pending_accept",
 	}
 
 	tx := dao.DbDao.Begin()
 
+	// Step 1: 创建订单（先插入一条记录）
 	if err := tx.Create(&newOrder).Error; err != nil {
 		tx.Rollback()
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "创建订单失败: " + err.Error()})
 		return
 	}
 
+	var totalAmount float32
+
+	// Step 2: 遍历商品，创建订单项
 	for _, item := range postData.GoodsList {
 		var goodInfo models.Goods
-		this.utils.Logger.PrintInfo("goodsId: ", item.GoodsId, ", MId: ", postData.MerchantId)
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}). // 锁住该行
-										Where("id = ? AND merchant_id = ?", item.GoodsId, postData.MerchantId).
-										First(&goodInfo).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ? AND merchant_id = ?", item.GoodsId, postData.MerchantId).
+			First(&goodInfo).Error; err != nil {
 			tx.Rollback()
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("商品不存在: id=%d", item.GoodsId)})
 			return
@@ -116,7 +120,9 @@ func (this *UserServices) CommitNewOrder(ctx *gin.Context) {
 			return
 		}
 
-		// 创建订单项
+		// 订单项价格计算
+		total := float32(item.Count) * goodInfo.Price
+
 		orderItem := models.OrderItem{
 			OrderId:    orderId,
 			UserId:     postData.UserId,
@@ -126,8 +132,10 @@ func (this *UserServices) CommitNewOrder(ctx *gin.Context) {
 			LogoUrl:    goodInfo.LogoUrl,
 			Price:      goodInfo.Price,
 			Quantity:   int64(item.Count),
-			Total:      goodInfo.Price * float32(item.Count),
+			Total:      total,
 		}
+
+		totalAmount += total
 
 		if err := tx.Create(&orderItem).Error; err != nil {
 			tx.Rollback()
@@ -136,6 +144,16 @@ func (this *UserServices) CommitNewOrder(ctx *gin.Context) {
 		}
 	}
 
+	// Step 3: 更新订单总金额
+	if err := tx.Model(&models.Order{}).
+		Where("order_id = ?", orderId).
+		Update("total_amount", totalAmount).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "更新订单金额失败: " + err.Error()})
+		return
+	}
+
+	// Step 4: 提交事务
 	if err := tx.Commit().Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "订单提交失败: " + err.Error()})
 		return
