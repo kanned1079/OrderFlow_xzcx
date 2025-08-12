@@ -26,7 +26,7 @@ func (this *UserServices) Login(ctx *gin.Context) {
 	var user models.User
 	if result := dao.DbDao.Model(&models.User{}).Where("phone_number = ?", reqData.PhoneNumber).First(&user); errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		// 用户没找到
-		ctx.JSON(http.StatusNotFound, gin.H{
+		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"message": "用户不存在",
 		})
 		return

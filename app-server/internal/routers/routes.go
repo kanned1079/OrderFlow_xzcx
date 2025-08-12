@@ -2,6 +2,7 @@ package routers
 
 import (
 	"fmt"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -19,6 +20,14 @@ func (this *GatewayApp) StartApiGateway() {
 	if gin.Mode() != gin.ReleaseMode {
 		logger.PrintWarn("Running in \"debug\" or \"test\" mode. Switch to \"release\" mode in production.")
 	}
+
+	this.Router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type"},
+		AllowCredentials: false, // 注意必须为 false
+		MaxAge:           12 * time.Hour,
+	}))
 
 	apiPrefix := this.Router.Group("/api")
 	v1 := apiPrefix.Group("/v1")
