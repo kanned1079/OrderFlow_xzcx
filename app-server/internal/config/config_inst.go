@@ -17,3 +17,10 @@ func (this *AppConfig) ReadConfigFile(path string) {
 		panic(fmt.Sprintf("failed to parse yaml: %v", err))
 	}
 }
+
+//// LoadCfg depreciated
+//func (this *AppConfig) LoadCfg(path string) {
+//	var logger utils.Logger
+//	logger.PrintSuccess("Starting read conf, path: ", path)
+//	// todo
+//}

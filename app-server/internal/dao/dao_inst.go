@@ -18,11 +18,8 @@ type DaoInstance struct {
 }
 
 func NewDaoInstance(id int32) *DaoInstance {
-	var err error = nil
+	var err error
 	var daoInst *DaoInstance = &DaoInstance{Id: id}
-	//if err = daoInst.readDatabaseConfig(); err != nil {
-	//	panic(fmt.Sprintf("failure read config: %v", err))
-	//}
 	DbDao, err = gorm.Open(mysql.New(mysql.Config{
 		DSN: fmt.Sprintf("%s:%s@%s(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 			//daoInst.DbConfig.MysqlConfig.Username,
@@ -47,8 +44,7 @@ func NewDaoInstance(id int32) *DaoInstance {
 	if DbDao.Exec(`SELECT 1 + 1;`).Error != nil {
 		panic(fmt.Sprintf("failed to connect to database: %v", err))
 	}
-	utils.Logger{}.PrintSuccess("数据库服务器已连接 Server is connected and tested.")
-	//log.Println("Server is connected and tested.")
+	utils.Logger{}.PrintSuccess("Server is connected and tested.")
 	daoInst.migrateTables()
 	return daoInst
 }
