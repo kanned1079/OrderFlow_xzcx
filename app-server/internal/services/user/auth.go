@@ -37,7 +37,7 @@ func (this *UserServices) Login(ctx *gin.Context) {
 
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(reqData.Password))
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
+		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"message": "密码错误",
 		})
 		return
@@ -109,4 +109,15 @@ func (this *UserServices) Register(ctx *gin.Context) {
 		"user":  newUser,
 		"token": tokenStr,
 	})
+}
+
+func (this *UserServices) UpdateUserPassword(ctx *gin.Context) {
+	var reqData dto.UserUpdatePasswordRequestDto
+	if err := ctx.ShouldBindJSON(&reqData); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "请求格式不合法" + err.Error(),
+		})
+		return
+	}
+
 }

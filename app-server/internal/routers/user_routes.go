@@ -10,6 +10,8 @@ func (this *GatewayApp) RegisterUserRoutes(v1 *gin.RouterGroup) {
 	userGroup := v1.Group("/user", middlewares.RequireRole("user"))
 	var userService user.UserServices
 
+	userGroup.PATCH("password/update", userService.UpdateUserPassword)
+
 	userGroup.GET("merchants", userService.FetchMerchants)
 
 	userGroup.GET("goods", userService.FetchGoodsListAsCategory)

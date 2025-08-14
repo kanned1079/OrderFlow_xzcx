@@ -16,6 +16,11 @@ type UserRegisterRequestDto struct {
 	Username    string `json:"username"`
 }
 
+type UserUpdatePasswordRequestDto struct {
+	PreviousPassword string `json:"previous_password"`
+	NewPassword      string `json:"new_password"`
+}
+
 //type UserLoginResponseDto struct {
 //	User         models.User `json:"user"`
 //	AccessToken  string      `json:"access_token"`

@@ -1,5 +1,10 @@
 package dto
 
+type OverviewItem struct {
+	Date  string `json:"date"`
+	Value int64  `json:"value"`
+}
+
 type FetchAdminDashboardStatisticResponseDto struct {
 	RegisteredMerchants struct {
 		Total     int64 `json:"total"`
@@ -13,8 +18,9 @@ type FetchAdminDashboardStatisticResponseDto struct {
 		ThisMonth int64 `json:"this_month"`
 	} `json:"registered_users"`
 
-	UserOrdersOverview []int64 `json:"user_orders_overview"`
-	MerchantsOverview  []int64 `json:"merchants_overview"`
+	UserOrdersOverview []OverviewItem `json:"user_orders_overview"`
+	MerchantsOverview  []OverviewItem `json:"merchants_overview"`
 
 	Message string `json:"message"`
+	P1      string `json:"p1"`
 }

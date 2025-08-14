@@ -39,14 +39,7 @@ func (this *AdminServices) FetchAllMerchants(ctx *gin.Context) {
 	// 添加搜索条件
 	if paramsData.Search != "" {
 		like := "%" + paramsData.Search + "%"
-		switch paramsData.SearchAs {
-		case "name":
-			query = query.Where("merchant_name LIKE ?", like)
-		case "phone_number":
-			query = query.Where("phone_number LIKE ?", like)
-		default:
-			// 如果 search_as 不合法或未设置，可选行为：忽略或全字段模糊搜索
-		}
+		query = query.Where("merchant_name LIKE ?", like)
 	}
 
 	// 排序

@@ -24,7 +24,7 @@ func (this *GatewayApp) StartApiGateway() {
 	this.Router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: false, // 注意必须为 false
 		MaxAge:           12 * time.Hour,
 	}))

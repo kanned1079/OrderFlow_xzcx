@@ -9,12 +9,13 @@ import (
 	"time"
 )
 
-func (UserServices) FetchGoodsListAsCategory(ctx *gin.Context) {
+func (this *UserServices) FetchGoodsListAsCategory(ctx *gin.Context) {
 	var req dto.FetchGoodsListAsCategoryRequestDto
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "参数错误: " + err.Error()})
 		return
 	}
+	this.utils.Logger.PrintWarn(req)
 
 	var categories []models.Category
 	if err := dao.DbDao.Where("merchant_id = ?", req.MerchantId).Order("created_at DESC").Find(&categories).Error; err != nil {

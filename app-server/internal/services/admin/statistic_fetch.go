@@ -74,8 +74,12 @@ func (this *AdminServices) FetchAdminDashboardStatistic(ctx *gin.Context) {
 		orderMap[item.Date.Format("2006-01-02")] = item.Count
 	}
 	for i := 0; i < 7; i++ {
-		day := sevenDaysAgo.AddDate(0, 0, i).Format("2006-01-02")
-		resp.UserOrdersOverview = append(resp.UserOrdersOverview, orderMap[day])
+		day := sevenDaysAgo.AddDate(0, 0, i)
+		dateKey := day.Format("2006-01-02")
+		resp.UserOrdersOverview = append(resp.UserOrdersOverview, dto.OverviewItem{
+			Date:  day.Format("01/02"), // MM/DD
+			Value: orderMap[dateKey],
+		})
 	}
 
 	// 最近 7 天商户注册统计
@@ -98,9 +102,15 @@ func (this *AdminServices) FetchAdminDashboardStatistic(ctx *gin.Context) {
 		merchantMap[item.Date.Format("2006-01-02")] = item.Count
 	}
 	for i := 0; i < 7; i++ {
-		day := sevenDaysAgo.AddDate(0, 0, i).Format("2006-01-02")
-		resp.MerchantsOverview = append(resp.MerchantsOverview, merchantMap[day])
+		day := sevenDaysAgo.AddDate(0, 0, i)
+		dateKey := day.Format("2006-01-02")
+		resp.MerchantsOverview = append(resp.MerchantsOverview, dto.OverviewItem{
+			Date:  day.Format("01/02"), // MM/DD
+			Value: merchantMap[dateKey],
+		})
 	}
+
+	resp.P1 = `“绿水青山既是自然财富，又是经济财富。”习近平总书记的这一重要论述，深刻揭示了绿水青山与金山银山的辩证统一关系。人不负青山，青山定不负人。党的十八大以来，以习近平同志为核心的党中央以前所未有的力度抓生态文明建设，一幅幅生态美、产业兴、百姓富的壮美画卷已铺展开来。`
 
 	ctx.JSON(http.StatusOK, &resp)
 }
