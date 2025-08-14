@@ -17,6 +17,13 @@ type CreateNewMerchantRequestDto struct {
 	Address      string `json:"address"`
 }
 
+type UpdateMerchantByIdRequestDto struct {
+	MerchantName string `json:"merchant_name"`
+	Description  string `json:"description"`
+	LogoUrl      string `json:"logo_url"`
+	Address      string `json:"address"`
+}
+
 type DeleteMerchantRequestDto struct {
 	Id int64 `form:"id"`
 }

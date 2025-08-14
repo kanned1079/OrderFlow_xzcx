@@ -222,6 +222,67 @@ func (this *AdminServices) CreateNewMerchant(ctx *gin.Context) {
 	}
 }
 
+// UpdateMerchantById 修改商户信息
+func (this *AdminServices) UpdateMerchantById(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	merchantID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "无效的商户 ID"})
+		return
+	}
+
+	// 绑定请求参数
+	var postData dto.UpdateMerchantByIdRequestDto
+	if err := ctx.ShouldBindJSON(&postData); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "参数绑定失败: " + err.Error(),
+		})
+		return
+	}
+
+	// 开启事务
+	tx := dao.DbDao.Begin()
+	if tx.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "无法开启事务"})
+		return
+	}
+
+	var merchant models.Merchant
+	// 查询商户是否存在
+	if err := tx.Where("id = ?", merchantID).First(&merchant).Error; err != nil {
+		tx.Rollback()
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"message": "商户不存在"})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "查询商户失败"})
+		}
+		return
+	}
+
+	// 更新字段
+	merchant.MerchantName = postData.MerchantName
+	merchant.Description = postData.Description
+	merchant.LogoUrl = postData.LogoUrl
+	merchant.Address = postData.Address
+
+	if err := tx.Save(&merchant).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "更新商户失败"})
+		return
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "提交事务失败"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "更新成功",
+		"data":    merchant,
+	})
+}
+
 // DeleteMerchant 管理员删除商铺
 // 并将删除其附属商品以及订单信息
 //
