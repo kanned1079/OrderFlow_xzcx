@@ -56,3 +56,7 @@ func (this *AdminServices) FetchAllTraders(ctx *gin.Context) {
 		"size":    paramsData.Size,
 	})
 }
+
+func (this *AdminServices) CreateNewTrader(ctx *gin.Context) {
+
+}

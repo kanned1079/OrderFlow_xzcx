@@ -14,7 +14,9 @@ func (this *GatewayApp) RegisterAdminRoutes(v1 *gin.RouterGroup) {
 	adminGrp.POST("/merchants", adminService.CreateNewMerchant)
 	adminGrp.DELETE("merchants/:id", adminService.DeleteMerchant)
 
+	// 注意这个获取的是商家的列表 而不是商家开的店的列表
 	adminGrp.GET("/traders", adminService.FetchAllTraders)
+	adminGrp.POST("traders")
 
 	adminGrp.GET("/statistic", adminService.FetchAdminDashboardStatistic)
 }

@@ -9,7 +9,8 @@ type FetchAllMerchantsRequestDto struct {
 }
 
 type CreateNewMerchantRequestDto struct {
-	UserId       int64  `json:"user_id"`
+	//UserId       int64  `json:"user_id"`
+	PhoneNumber  string `json:"phone_number"`
 	MerchantName string `json:"merchant_name"`
 	Description  string `json:"description"`
 	LogoUrl      string `json:"logo_url"`
