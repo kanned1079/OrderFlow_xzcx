@@ -23,9 +23,9 @@ type Merchant struct {
 	Id         int64  `json:"id" gorm:"primaryKey;autoIncrement"` // 数据表id
 	MerchantId string `json:"merchant_id"`                        // 商户id
 
-	UserId int64 `json:"user_id" gorm:"not null;index"` // 必须有效
-	User   User  `gorm:"foreignKey:UserId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-
+	UserId       int64  `json:"user_id" gorm:"not null;index"` // 必须有效
+	User         User   `gorm:"foreignKey:UserId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	PhoneNumber  string `json:"phone_number"`
 	MerchantName string `json:"merchant_name"` // 商户名
 	Description  string `json:"description"`   // 商户描述
 	LogoUrl      string `json:"logo_url"`      // 商户Logo图片

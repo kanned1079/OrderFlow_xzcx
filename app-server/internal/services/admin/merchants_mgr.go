@@ -44,9 +44,9 @@ func (this *AdminServices) FetchAllMerchants(ctx *gin.Context) {
 	}
 
 	// 排序
-	sortOrder := "id DESC" // 默认按 id 倒序
-	if strings.ToUpper(paramsData.Sort) == "ASC" {
-		sortOrder = "id ASC"
+	sortOrder := "id ASC" // 默认 id ASC
+	if strings.ToUpper(paramsData.Sort) == "DESC" {
+		sortOrder = "id DESC"
 	}
 	query = query.Order(sortOrder)
 
@@ -175,6 +175,7 @@ func (this *AdminServices) CreateNewMerchant(ctx *gin.Context) {
 		// 构造新商户
 		newMerchant := models.Merchant{
 			UserId:       user.Id,
+			PhoneNumber:  user.PhoneNumber,
 			MerchantId:   uuid.New().String(),
 			MerchantName: postData.MerchantName,
 			Description:  postData.Description,
