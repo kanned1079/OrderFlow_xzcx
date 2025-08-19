@@ -1,11 +1,12 @@
 package dto
 
 type FetchAllMerchantsRequestDto struct {
-	SearchAs string `form:"search_as"`
-	Search   string `form:"search"`
-	Sort     string `form:"sort"`
-	Page     int64  `form:"page"`
-	Size     int64  `form:"size"`
+	SearchAs    string `form:"search_as"`
+	ShowDeleted bool   `form:"show_deleted"`
+	Search      string `form:"search"`
+	Sort        string `form:"sort"`
+	Page        int64  `form:"page"`
+	Size        int64  `form:"size"`
 }
 
 type CreateNewMerchantRequestDto struct {

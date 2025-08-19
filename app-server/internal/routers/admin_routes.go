@@ -14,6 +14,7 @@ func (this *GatewayApp) RegisterAdminRoutes(v1 *gin.RouterGroup) {
 	var adminGrp = v1.Group("/admin", middlewares.RequireRole("admin"))
 
 	adminGrp.GET("/merchants", adminService.FetchAllMerchants)
+	adminGrp.GET("/merchants/:id", adminService.FetchMerchantById)
 	adminGrp.POST("/merchants", adminService.CreateNewMerchant)
 	adminGrp.PUT("/merchants/:id", adminService.UpdateMerchantById)
 	adminGrp.DELETE("merchants/:id", adminService.DeleteMerchant)

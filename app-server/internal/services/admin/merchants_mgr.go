@@ -24,7 +24,7 @@ func (this *AdminServices) FetchAllMerchants(ctx *gin.Context) {
 		return
 	}
 
-	this.utils.Logger.PrintInfo("1", paramsData)
+	//this.utils.Logger.PrintInfo("1", paramsData)
 
 	// 默认分页设置
 	if paramsData.Page <= 0 {
@@ -41,6 +41,10 @@ func (this *AdminServices) FetchAllMerchants(ctx *gin.Context) {
 	if paramsData.Search != "" {
 		like := "%" + paramsData.Search + "%"
 		query = query.Where("merchant_name LIKE ?", like)
+	}
+
+	if paramsData.ShowDeleted {
+		query = query.Unscoped()
 	}
 
 	// 排序
@@ -73,6 +77,26 @@ func (this *AdminServices) FetchAllMerchants(ctx *gin.Context) {
 		"count":     count,
 		"page":      paramsData.Page,
 		"size":      paramsData.Size,
+	})
+}
+
+func (this *AdminServices) FetchMerchantById(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	merchantID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "无效的商户 ID"})
+		return
+	}
+	var merchant models.Merchant
+	if result := dao.DbDao.Model(&models.Merchant{}).Where("id = ?", merchantID).First(&merchant); result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "查找指定ID的商铺失败: " + result.Error.Error(),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"merchant": merchant,
+		"message":  "success",
 	})
 }
 
@@ -154,7 +178,7 @@ func (this *AdminServices) CreateNewMerchant(ctx *gin.Context) {
 		// 检查用户是否存在
 		var user models.User
 		if result := tx.Where("phone_number = ?", postData.PhoneNumber).First(&user); errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			ctx.JSON(http.StatusNotFound, gin.H{
+			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"message": "指定的用户不存在",
 			})
 			return fmt.Errorf("user_not_found") // 返回错误触发回滚
@@ -240,6 +264,8 @@ func (this *AdminServices) UpdateMerchantById(ctx *gin.Context) {
 		})
 		return
 	}
+
+	//this.utils.Logger.PrintInfo(postData)
 
 	// 开启事务
 	tx := dao.DbDao.Begin()
