@@ -22,17 +22,60 @@ type FetchAdminDashboardStatisticResponseDto struct {
 type FetchMerchantStatisticRequest struct {
 }
 
+//type FetchMerchantStatisticResponse struct {
+//	Goods struct {
+//		Total   int64 `json:"total"`
+//		Deleted int64 `json:"deleted"`
+//		OnSale  int64 `json:"on_sale"`
+//	} `json:"goods"`
+//	UserOrders struct {
+//		Completed [7]int64 `json:"completed"`
+//		Failed    [7]int64 `json:"failed"`
+//	} `json:"user_orders"`
+//	Income [7]float32 `json:"income"`
+//
+//	Message string `json:"message"`
+//}
+
+type OverviewItem struct {
+	Date  string  `json:"date"`
+	Value float64 `json:"value"`
+}
+
+//type FetchMerchantStatisticResponse struct {
+//	Goods struct {
+//		Total   int64 `json:"total"`
+//		Deleted int64 `json:"deleted"`
+//		OnSale  int64 `json:"on_sale"`
+//	} `json:"goods"`
+//
+//	UserOrders struct {
+//		Completed []OverviewItem `json:"completed"`
+//		Failed    []OverviewItem `json:"failed"`
+//	} `json:"user_orders"`
+//
+//	Income []OverviewItem `json:"income"`
+//
+//	Message string `json:"message"`
+//}
+//
+//type OverviewItem struct {
+//	Date  string  `json:"date"`
+//	Value float64 `json:"value"`
+//}
+
 type FetchMerchantStatisticResponse struct {
 	Goods struct {
 		Total   int64 `json:"total"`
 		Deleted int64 `json:"deleted"`
 		OnSale  int64 `json:"on_sale"`
 	} `json:"goods"`
-	UserOrders struct {
-		Completed [7]int64 `json:"completed"`
-		Failed    [7]int64 `json:"failed"`
-	} `json:"user_orders"`
-	Income [7]float32 `json:"income"`
 
-	Message string `json:"message"`
+	UserOrders struct {
+		Completed []OverviewItem `json:"completed"`
+		Failed    []OverviewItem `json:"failed"`
+	} `json:"user_orders"`
+
+	Income  []OverviewItem `json:"income"`
+	Message string         `json:"message"`
 }
