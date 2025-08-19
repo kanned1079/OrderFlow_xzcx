@@ -105,31 +105,36 @@ import (
 
 // FetchMerchantStatistic 获取商家的统计数据
 func (this *TraderServices) FetchMerchantStatistic(ctx *gin.Context) {
-	userIdStr := ctx.Param("u_id")
-	userId, err := strconv.ParseInt(userIdStr, 10, 64)
+	merchantIdStr := ctx.Param("m_id")
+	merchantId, err := strconv.ParseInt(merchantIdStr, 10, 64)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "用户ID格式错误"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "商户ID格式错误"})
 		return
 	}
 
-	var user models.User
-	if result := dao.DbDao.Model(&models.User{}).Where("id = ? AND role = ?", userId, "trader").First(&user); result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"message": "查询用户关联信息出错: " + result.Error.Error(),
-		})
-		return
-	}
+	//var user models.User
+	//if result := dao.DbDao.Model(&models.User{}).Where("id = ? AND role = ?", userId, "trader").First(&user); result.Error != nil {
+	//	ctx.JSON(http.StatusInternalServerError, gin.H{
+	//		"message": "查询用户关联信息出错: " + result.Error.Error(),
+	//	})
+	//	return
+	//}
+	//
+	//var merchantInfo models.Merchant
+	//if result := dao.DbDao.Model(&models.Merchant{}).Where("user_id = ?", user.Id).First(&merchantInfo); result.Error != nil {
+	//	ctx.JSON(http.StatusInternalServerError, gin.H{
+	//		"message": "查询商户关联信息出错: " + result.Error.Error(),
+	//	})
+	//	return
+	//}
 
-	var merchantInfo models.Merchant
-	if result := dao.DbDao.Model(&models.Merchant{}).Where("user_id = ?", user.Id).First(&merchantInfo); result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"message": "查询商户关联信息出错: " + result.Error.Error(),
-		})
-		return
-	}
-
-	var merchantId int64 = merchantInfo.Id
+	//var merchantId int64 = merchantInfo.Id
 	var fetchMerchantStatistic dto.FetchMerchantStatisticResponse
+
+	if result := dao.DbDao.Model(&models.Order{}).Where("status = ? OR status = ?", "pending_accept", "processing").Find(&fetchMerchantStatistic.ActiveOrder); result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "查询活跃订单出错"})
+		return
+	}
 
 	// 商品数量统计
 	if result := dao.DbDao.Model(&models.Goods{}).Unscoped().Where("merchant_id = ?", merchantId).Count(&fetchMerchantStatistic.Goods.Total); result.Error != nil {
@@ -192,6 +197,7 @@ func (this *TraderServices) FetchMerchantStatistic(ctx *gin.Context) {
 	fetchMerchantStatistic.UserOrders.Completed = completedList
 	fetchMerchantStatistic.UserOrders.Failed = failedList
 	fetchMerchantStatistic.Income = incomeList
+	fetchMerchantStatistic.Message = "success (from cache)"
 
 	ctx.JSON(http.StatusOK, fetchMerchantStatistic)
 }

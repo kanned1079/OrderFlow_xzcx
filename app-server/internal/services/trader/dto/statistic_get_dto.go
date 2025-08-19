@@ -1,5 +1,7 @@
 package dto
 
+import "stay-server/internal/models"
+
 type FetchAdminDashboardStatisticResponseDto struct {
 	RegisteredMerchants struct {
 		Total     int64 `json:"total"`
@@ -70,12 +72,11 @@ type FetchMerchantStatisticResponse struct {
 		Deleted int64 `json:"deleted"`
 		OnSale  int64 `json:"on_sale"`
 	} `json:"goods"`
-
 	UserOrders struct {
 		Completed []OverviewItem `json:"completed"`
 		Failed    []OverviewItem `json:"failed"`
 	} `json:"user_orders"`
-
-	Income  []OverviewItem `json:"income"`
-	Message string         `json:"message"`
+	Income      []OverviewItem `json:"income"`
+	ActiveOrder []models.Order
+	Message     string `json:"message"`
 }
