@@ -20,7 +20,7 @@ func (this *TraderServices) FetchMerchantStatistic(ctx *gin.Context) {
 	}
 
 	var user models.User
-	if result := dao.DbDao.Model(&models.User{}).Where("id = ? AND role = trader", userId).First(&user); result.Error != nil {
+	if result := dao.DbDao.Model(&models.User{}).Where("id = ? AND role = ?", userId, "trader").First(&user); result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"message": "查询用户关联信息出错" + result.Error.Error(),
 		})
