@@ -56,10 +56,26 @@ func (this *UserServices) Login(ctx *gin.Context) {
 	}
 
 	user.Password = ""
-	ctx.JSON(http.StatusOK, gin.H{
-		"user":  user,
-		"token": tokenStr,
-	})
+
+	if user.Role == "trader" {
+		var merchant models.Merchant
+		if result := dao.DbDao.Model(&models.Merchant{}).Where("user_id = ?", user.Id).First(&merchant); result.Error != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"message": "加载商家信息时出现错误 " + result.Error.Error(),
+			})
+			return
+		}
+		ctx.JSON(http.StatusOK, gin.H{
+			"user":     user,
+			"merchant": merchant,
+			"token":    tokenStr,
+		})
+	} else {
+		ctx.JSON(http.StatusOK, gin.H{
+			"user":  user,
+			"token": tokenStr,
+		})
+	}
 
 }
 
