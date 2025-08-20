@@ -67,16 +67,20 @@ type OverviewItem struct {
 //}
 
 type FetchMerchantStatisticResponse struct {
-	Goods struct {
-		Total   int64 `json:"total"`
-		Deleted int64 `json:"deleted"`
-		OnSale  int64 `json:"on_sale"`
-	} `json:"goods"`
+	GoodsCount struct { // 商品计数
+		Total   int64 `json:"total"`   // 总商品
+		Deleted int64 `json:"deleted"` // 删除了的
+		OnSale  int64 `json:"on_sale"` // 总商品-删除了的
+	} `json:"goods_count"`
 	UserOrders struct {
-		Completed []OverviewItem `json:"completed"`
-		Failed    []OverviewItem `json:"failed"`
+		TodayCount       int64          `json:"today_count"`        // 今天订单数
+		TodayProcessing  int64          `json:"today_processing"`   // 今天正在处理中的订单
+		WeekFinishedRate float32        `json:"week_finished_rate"` // 最近一周的订单完成率
+		CompletedGraph   []OverviewItem `json:"completed_graph"`    // 最近一周完成订单数量的图表数据
+		FailedGraph      []OverviewItem `json:"failed_graph"`       // 最近一周失败图表数据
 	} `json:"user_orders"`
-	Income      []OverviewItem `json:"income"`
-	ActiveOrder []models.Order
-	Message     string `json:"message"`
+	IncomeGraph     []OverviewItem `json:"income_graph"`      // 最近一周收入图表
+	ActiveOrderList []models.Order `json:"active_order_list"` // 现在还没接单和正在处理的订单列表
+
+	Message string `json:"message"`
 }
