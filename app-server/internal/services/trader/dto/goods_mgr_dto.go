@@ -1,11 +1,11 @@
 package dto
 
 type GetGoodsListRequestDto struct {
-	MerchantId int64  `form:"merchant_id"`
-	GoodsName  string `form:"goods_name"`
-	Sort       string `form:"sort"`
-	Page       int    `form:"page"`
-	Size       int    `form:"size"`
+	GoodsName string `form:"goods_name"`
+	Sort      string `form:"sort"`
+	SortAs    string `form:"sort_as"`
+	Page      int    `form:"page"`
+	Size      int    `form:"size"`
 }
 
 type AddNewGoodsRequestDto struct {
@@ -20,7 +20,6 @@ type AddNewGoodsRequestDto struct {
 
 type EditGoodsRequestDto struct {
 	Id          int64   `json:"id"`          // 商品id
-	MerchantId  int64   `json:"merchant_id"` // 对应商户id
 	CategoryId  int64   `json:"category_id"` // 分类id
 	GoodsName   string  `json:"goods_name"`  // 商品名
 	Description string  `json:"description"` // 商品描述

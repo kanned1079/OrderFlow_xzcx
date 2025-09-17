@@ -2,6 +2,7 @@ package trader
 
 import (
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"net/http"
@@ -12,22 +13,41 @@ import (
 )
 
 // GetCategoryList 获取所有类别列表
+// GET /api/v1/trader/category/:m_id?page=&size=&category_title=&sort_as=&sort=
 func (this *TraderServices) GetCategoryList(ctx *gin.Context) {
+	id := ctx.Param("m_id")
+	merchantId, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid merchant_id"})
+		return
+	}
+
 	var query dto.GetCategoryListRequestDto
 	if err := ctx.ShouldBindQuery(&query); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "参数错误: " + err.Error()})
 		return
 	}
 
-	if query.Page <= 0 {
+	// 默认分页处理
+	if query.Page == 0 {
 		query.Page = 1
 	}
 	if query.Size <= 0 {
 		query.Size = 10
 	}
-	offset := (query.Page - 1) * query.Size
+	if query.Size > 100 {
+		query.Size = 100
+	}
 
-	db := dao.DbDao.Model(&models.Category{})
+	// 排序规则
+	if query.Sort != "DESC" {
+		query.Sort = "ASC"
+	}
+	if query.SortAs != "created_at" {
+		query.SortAs = "id"
+	}
+
+	db := dao.DbDao.Model(&models.Category{}).Where("merchant_id = ?", merchantId)
 	if query.CategoryTitle != "" {
 		db = db.Where("title LIKE ?", "%"+query.CategoryTitle+"%")
 	}
@@ -36,9 +56,24 @@ func (this *TraderServices) GetCategoryList(ctx *gin.Context) {
 	db.Count(&count)
 
 	var list []models.Category
-	if err := db.Order("id DESC").Offset(offset).Limit(query.Size).Find(&list).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "查询失败: " + err.Error()})
-		return
+
+	// page = -1 表示查询全部
+	if query.Page == -1 {
+		if err := db.Session(&gorm.Session{}).
+			Order(fmt.Sprintf("%s %s", query.SortAs, query.Sort)).
+			Find(&list).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "查询失败: " + err.Error()})
+			return
+		}
+	} else {
+		offset := (query.Page - 1) * query.Size
+		if err := db.Session(&gorm.Session{}).
+			Order(fmt.Sprintf("%s %s", query.SortAs, query.Sort)).
+			Offset(offset).Limit(query.Size).
+			Find(&list).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "查询失败: " + err.Error()})
+			return
+		}
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -63,7 +98,7 @@ func (this *TraderServices) AddNewCategory(ctx *gin.Context) {
 		Where("merchant_id = ? AND title = ?", post.MerchantId, post.CategoryTitle).
 		Count(&exists)
 	if exists > 0 {
-		ctx.JSON(http.StatusConflict, gin.H{"message": "分类名称已存在"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "分类名称已存在"})
 		return
 	}
 
@@ -85,6 +120,12 @@ func (this *TraderServices) AddNewCategory(ctx *gin.Context) {
 
 // EditCategory 编辑分类标签
 func (this *TraderServices) EditCategory(ctx *gin.Context) {
+	id := ctx.Param("m_id")
+	merchantId, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid id"})
+		return
+	}
 	var post dto.EditCategoryRequestDto
 	if err := ctx.ShouldBindJSON(&post); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "参数错误: " + err.Error()})
@@ -92,14 +133,14 @@ func (this *TraderServices) EditCategory(ctx *gin.Context) {
 	}
 
 	var category models.Category
-	result := dao.DbDao.Where("merchant_id = ? AND id = ?", post.MerchantId, post.CategoryId).First(&category)
+	result := dao.DbDao.Where("merchant_id = ? AND id = ?", merchantId, post.CategoryId).First(&category)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "分类不存在"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "分类不存在"})
 		return
 	}
 
 	if post.CategoryTitle == "" || category.Title == post.CategoryTitle {
-		ctx.JSON(http.StatusConflict, gin.H{"message": "分类标签重复或不合法"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "分类标签重复或不合法"})
 		return
 	}
 
@@ -133,7 +174,7 @@ func (this *TraderServices) DeleteCategory(ctx *gin.Context) {
 	var category models.Category
 	result := dao.DbDao.Where("id = ? AND merchant_id = ?", categoryId, mId).First(&category)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "分类不存在或无权删除"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "分类不存在或无权删除"})
 		return
 	}
 

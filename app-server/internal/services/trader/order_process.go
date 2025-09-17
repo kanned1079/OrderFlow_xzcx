@@ -9,17 +9,42 @@ import (
 	"stay-server/internal/dao"
 	"stay-server/internal/models"
 	"stay-server/internal/services/trader/dto"
+	"strconv"
 	"strings"
 	"time"
 )
 
-func (TraderServices) GetOrderList(ctx *gin.Context) {
+//func (this *TraderServices) GetAllOrderList(ctx *gin.Context) {
+//	req := &struct {
+//		Page   int    `form:"page" json:"page"`
+//		Size   int    `form:"size" json:"size"`
+//		SortAs string `form:"sort_as" json:"sort_as"`
+//		Sort   string `form:"sort" json:"sort"`
+//	}{}
+//
+//	var list []models.Order
+//}
+
+// GetOrderList GET: /api/v1/trader/order/v1/m_id?is_active=&page=&size=&sort=&order_id=
+// `is_active`为false查询所有订单 否则查询活跃订单
+// `sort`取ASC DESC 按照`sort_as`排序 `sort_as`取order_id created_at
+// `order_id`如果不是空需要查询这个订单
+func (this *TraderServices) GetOrderList(ctx *gin.Context) {
+	mIdStr := ctx.Param("m_id")
+	merchantId, err := strconv.ParseInt(mIdStr, 10, 64)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "地址ID格式错误"})
+		return
+	}
+
 	var req dto.GetOrderListRequestDto
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "参数错误: " + err.Error()})
 		return
 	}
 
+	// 先修正分页参数
 	if req.Page <= 0 {
 		req.Page = 1
 	}
@@ -28,17 +53,48 @@ func (TraderServices) GetOrderList(ctx *gin.Context) {
 	}
 	offset := (req.Page - 1) * req.Size
 
+	// 排序字段检查
+	if req.SortAs != "created_at" {
+		req.SortAs = "order_id"
+	}
 	sort := strings.ToUpper(req.Sort)
 	if sort != "ASC" {
 		sort = "DESC"
+	}
+
+	// 如果订单号不是空的就查询订单号
+	if req.OrderId != "" {
+		var order models.Order
+		err := dao.DbDao.
+			Where("merchant_id = ? AND order_id = ?", merchantId, req.OrderId).
+			First(&order).Error
+
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "订单不存在"})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "查询订单失败: " + err.Error()})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"orders": []models.Order{order},
+			"total":  1,
+			"page":   1,
+			"size":   1,
+		})
+		return
 	}
 
 	if req.IsActive {
 		// 查询活跃订单（状态为待接单或处理中）
 		var activeOrders []models.Order
 		err := dao.DbDao.
-			Where("merchant_id = ? AND (status = ? OR status = ?)", req.MerchantId, "pending_accept", "processing").
-			Order("created_at DESC").
+			Where("merchant_id = ? AND (status = ? OR status = ?)", merchantId, "pending_accept", "processing").
+			Order(fmt.Sprintf("%s %s", req.SortAs, sort)).
+			Offset(offset).
+			Limit(req.Size).
 			Find(&activeOrders).Error
 
 		if err != nil {
@@ -48,9 +104,9 @@ func (TraderServices) GetOrderList(ctx *gin.Context) {
 
 		ctx.JSON(http.StatusOK, gin.H{
 			"orders": activeOrders,
-			"total":  len(activeOrders),
-			"page":   1,
-			"size":   len(activeOrders),
+			"total":  len(activeOrders), // 如果要精确分页，可以单独 Count
+			"page":   req.Page,
+			"size":   req.Size,
 		})
 		return
 	}
@@ -59,14 +115,14 @@ func (TraderServices) GetOrderList(ctx *gin.Context) {
 	var orders []models.Order
 	var total int64
 
-	query := dao.DbDao.Model(&models.Order{}).Where("merchant_id = ?", req.MerchantId)
+	query := dao.DbDao.Model(&models.Order{}).Where("merchant_id = ?", merchantId)
 
 	if err := query.Count(&total).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "查询总数失败: " + err.Error()})
 		return
 	}
 
-	if err := query.Order("created_at " + sort).
+	if err := query.Order(fmt.Sprintf("%s %s", req.SortAs, sort)).
 		Offset(offset).
 		Limit(req.Size).
 		Find(&orders).Error; err != nil {
@@ -124,7 +180,7 @@ func (TraderServices) CancelOrderByTrader(ctx *gin.Context) {
 
 	var existingOrder models.Order
 	result := dao.DbDao.
-		Where("order_id = ? AND user_id = ? AND merchant_id = ?", postData.OrderId, postData.UserId, postData.MerchantId).
+		Where("order_id = ?", postData.OrderId).
 		First(&existingOrder)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -196,7 +252,7 @@ func (TraderServices) AcceptOrderByTrader(ctx *gin.Context) {
 	var existingOrder models.Order
 	result := dao.DbDao.Where("order_id = ? AND merchant_id = ?", req.OrderId, req.MerchantId).First(&existingOrder)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "订单不存在或不属于该商户"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "订单不存在或不属于该商户"})
 		return
 	} else if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "查询订单失败: " + result.Error.Error()})
@@ -229,7 +285,7 @@ func (TraderServices) CompleteOrderByTrader(ctx *gin.Context) {
 	}
 
 	var existingOrder models.Order
-	result := dao.DbDao.Where("order_id = ? AND merchant_id = ?", req.OrderId, req.MerchantId).First(&existingOrder)
+	result := dao.DbDao.Where("order_id = ?", req.OrderId).First(&existingOrder)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "订单不存在或不属于该商户"})
 		return

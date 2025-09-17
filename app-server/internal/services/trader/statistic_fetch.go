@@ -64,7 +64,7 @@ func (this *TraderServices) randStatisticDataGenerate() dto.FetchMerchantStatist
 			TotalAmount: float32(rand.Intn(500) + 50),
 			MerchantId:  -1,
 			AddressId:   -1,
-			Status:      []string{"pending", "processing"}[rand.Intn(2)],
+			Status:      []string{"pending_accept", "processing"}[rand.Intn(2)],
 			CreatedAt:   setupTime,
 			UpdatedAt:   setupTime,
 		})

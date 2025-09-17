@@ -2,14 +2,18 @@ package user
 
 import (
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm/clause"
 	"net/http"
 	"stay-server/internal/dao"
 	"stay-server/internal/models"
 	"stay-server/internal/services/user/dto"
+	"strings"
 )
 
+// FetchMerchants GET: /api/v1/user/merchants?search=&page=&size=&sort_as=&sort=
 func (this *UserServices) FetchMerchants(ctx *gin.Context) {
 	var searchReq dto.FetchMerchantsRequestDto
+
 	// 绑定 query 参数
 	if err := ctx.ShouldBindQuery(&searchReq); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -18,9 +22,27 @@ func (this *UserServices) FetchMerchants(ctx *gin.Context) {
 		return
 	}
 
-	//this.utils.Logger.PrintInfo("搜索商家: ", searchReq.Search)
+	// 默认分页
+	if searchReq.Page <= 0 {
+		searchReq.Page = 1
+	}
+	if searchReq.Size <= 0 {
+		searchReq.Size = 10
+	}
+	offset := (searchReq.Page - 1) * searchReq.Size
 
-	var merchantList []models.Merchant
+	// 默认排序
+	sort := strings.ToUpper(searchReq.Sort)
+	if sort != "ASC" && sort != "DESC" {
+		sort = "ASC"
+	}
+
+	sortField := "id"
+	if searchReq.SortAs == "created_at" {
+		sortField = "created_at"
+	}
+
+	// 构建查询
 	query := dao.DbDao.Model(&models.Merchant{})
 
 	if searchReq.Search != "" {
@@ -28,7 +50,26 @@ func (this *UserServices) FetchMerchants(ctx *gin.Context) {
 		query = query.Where("merchant_name LIKE ? OR description LIKE ?", like, like)
 	}
 
-	if err := query.Find(&merchantList).Error; err != nil {
+	// 查询总数
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "查询商家总数失败",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// 查询分页数据
+	var merchantList []models.Merchant
+	if err := query.
+		Order(clause.OrderByColumn{
+			Column: clause.Column{Name: sortField},
+			Desc:   sort == "DESC",
+		}).
+		Offset(offset).
+		Limit(searchReq.Size).
+		Find(&merchantList).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"message": "查询商家失败",
 			"error":   err.Error(),
@@ -38,7 +79,12 @@ func (this *UserServices) FetchMerchants(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"merchants": merchantList,
-		"count":     len(merchantList),
+		"total":     total,
+		"page":      searchReq.Page,
+		"size":      searchReq.Size,
 		"search":    searchReq.Search,
+		"sort":      sort,
+		"sort_as":   sortField,
+		"message":   "success",
 	})
 }

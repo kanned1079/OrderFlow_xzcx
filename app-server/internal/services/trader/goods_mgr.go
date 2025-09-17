@@ -2,6 +2,7 @@ package trader
 
 import (
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"net/http"
@@ -12,7 +13,15 @@ import (
 )
 
 // GetGoodsList 商家获取商品列表
+// GET /api/v1/trader/goods/:m_id?page=&size=&good_name=&sort_as=&sort=
 func (TraderServices) GetGoodsList(ctx *gin.Context) {
+	id := ctx.Param("m_id")
+	merchantId, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid merchant_id"})
+		return
+	}
+
 	var paramsData dto.GetGoodsListRequestDto
 	if err := ctx.ShouldBindQuery(&paramsData); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -28,12 +37,18 @@ func (TraderServices) GetGoodsList(ctx *gin.Context) {
 	if paramsData.Size <= 0 {
 		paramsData.Size = 10
 	}
-	if paramsData.Sort != "ASC" {
-		paramsData.Sort = "DESC"
+
+	if paramsData.Sort != "DESC" {
+		paramsData.Sort = "ASC"
 	}
+
+	if paramsData.SortAs != "created_at" {
+		paramsData.SortAs = "id"
+	}
+
 	//offset := (paramsData.Page - 1) * paramsData.Size
 
-	query := dao.DbDao.Model(&models.Goods{}).Where("merchant_id = ?", paramsData.MerchantId)
+	query := dao.DbDao.Model(&models.Goods{}).Where("merchant_id = ?", merchantId)
 
 	// 模糊查询商品名
 	if paramsData.GoodsName != "" {
@@ -49,7 +64,7 @@ func (TraderServices) GetGoodsList(ctx *gin.Context) {
 
 	// 查询分页数据
 	var goodsList []models.Goods
-	if err := query.Order("id " + paramsData.Sort).
+	if err := query.Order(fmt.Sprintf("%s %s", paramsData.SortAs, paramsData.Sort)).
 		Offset((paramsData.Page - 1) * paramsData.Size).
 		Limit(paramsData.Size).
 		Find(&goodsList).Error; err != nil {
@@ -66,6 +81,7 @@ func (TraderServices) GetGoodsList(ctx *gin.Context) {
 }
 
 // AddNewGoods 商户添加商品 但是需要先在分类中设置好
+// POST /api/v1/trader/goods 全部放在body中 包括商户id
 func (this *TraderServices) AddNewGoods(ctx *gin.Context) {
 	var postData dto.AddNewGoodsRequestDto
 	if err := ctx.ShouldBindJSON(&postData); err != nil {
@@ -140,7 +156,15 @@ func (this *TraderServices) AddNewGoods(ctx *gin.Context) {
 }
 
 // EditGoodsInfo 商家编辑自家商品的信息
+// PUT /api/v1/trader/goods/:m_id
 func (this *TraderServices) EditGoodsInfo(ctx *gin.Context) {
+	id := ctx.Param("m_id")
+	merchantId, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid merchant_id"})
+		return
+	}
+
 	var postData dto.EditGoodsRequestDto
 	if err := ctx.ShouldBindJSON(&postData); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -158,7 +182,7 @@ func (this *TraderServices) EditGoodsInfo(ctx *gin.Context) {
 
 	var goods models.Goods
 	result := dao.DbDao.
-		Where("id = ? AND merchant_id = ?", postData.Id, postData.MerchantId).
+		Where("id = ? AND merchant_id = ?", postData.Id, merchantId).
 		First(&goods)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -173,7 +197,7 @@ func (this *TraderServices) EditGoodsInfo(ctx *gin.Context) {
 		return
 	}
 
-	exists, err := this.categoryExistsForMerchant(postData.CategoryId, postData.MerchantId)
+	exists, err := this.categoryExistsForMerchant(postData.CategoryId, merchantId)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "分类验证失败: " + err.Error()})
 		return
@@ -205,6 +229,8 @@ func (this *TraderServices) EditGoodsInfo(ctx *gin.Context) {
 	})
 }
 
+// DeleteGoods 商家删除商品 提供商户id和商品id
+// PUT /api/v1/trader/goods/:m_id/:id
 func (TraderServices) DeleteGoods(ctx *gin.Context) {
 	// 获取路由参数
 	mIDStr := ctx.Param("m_id")

@@ -2,6 +2,8 @@ package dto
 
 type GetCategoryListRequestDto struct {
 	CategoryTitle string `form:"category_title" json:"category_title"`
+	Sort          string `form:"sort"`
+	SortAs        string `form:"sort_as"`
 	Page          int    `form:"page" json:"page"`
 	Size          int    `form:"size" json:"size"`
 }
@@ -12,7 +14,6 @@ type AddNewCategoryRequestDto struct {
 }
 
 type EditCategoryRequestDto struct {
-	MerchantId    int64  `json:"merchant_id"` // 对应商户id
 	CategoryId    int64  `json:"category_id"`
 	CategoryTitle string `form:"category_title" json:"category_title"`
 }

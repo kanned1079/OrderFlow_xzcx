@@ -48,3 +48,8 @@ func (m *Merchant) AfterFind(tx *gorm.DB) error {
 	m.AvgStars = fmt.Sprintf("%.2f", m.AvgStarsFloat)
 	return nil
 }
+
+type Sta struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
