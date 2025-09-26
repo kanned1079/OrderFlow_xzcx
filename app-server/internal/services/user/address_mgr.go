@@ -28,15 +28,6 @@ func (UserServices) FetchAddressLstByUserId(ctx *gin.Context) {
 		return
 	}
 
-	// 默认分页参数
-	if query.Page <= 0 {
-		query.Page = 1
-	}
-	if query.Size <= 0 {
-		query.Size = 10
-	}
-	offset := (query.Page - 1) * query.Size
-
 	var (
 		addrList []models.Address
 		total    int64
@@ -48,12 +39,35 @@ func (UserServices) FetchAddressLstByUserId(ctx *gin.Context) {
 		return
 	}
 
+	db := dao.DbDao.Model(&models.Address{}).Where("user_id = ?", userId)
+
+	// page = -1 => 查询全部
+	if query.Page == -1 {
+		if err := db.Find(&addrList).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusOK, gin.H{
+			"list":    addrList,
+			"message": "success",
+			"total":   total,
+			"page":    query.Page,
+			"size":    total, // 这里 size 可以直接返回 total，表示全部
+		})
+		return
+	}
+
+	// 默认分页参数
+	if query.Page <= 0 {
+		query.Page = 1
+	}
+	if query.Size <= 0 {
+		query.Size = 10
+	}
+	offset := (query.Page - 1) * query.Size
+
 	// 查询分页数据
-	if err := dao.DbDao.Model(&models.Address{}).
-		Where("user_id = ?", userId).
-		Limit(query.Size).
-		Offset(offset).
-		Find(&addrList).Error; err != nil {
+	if err := db.Limit(query.Size).Offset(offset).Find(&addrList).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
@@ -64,6 +78,26 @@ func (UserServices) FetchAddressLstByUserId(ctx *gin.Context) {
 		"total":   total,
 		"page":    query.Page,
 		"size":    query.Size,
+	})
+}
+
+func (this *UserServices) FetchAddressById(ctx *gin.Context) {
+	addrIdStr := ctx.Param("address_id")
+	addrId, err := strconv.Atoi(addrIdStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid address id"})
+		return
+	}
+	var addr models.Address
+	if result := dao.DbDao.Model(&models.Address{}).Where("id = ?", addrId).First(&addr); result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "err: " + result.Error.Error(),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "success",
+		"address": addr,
 	})
 }
 

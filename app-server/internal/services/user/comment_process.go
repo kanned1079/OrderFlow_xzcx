@@ -97,6 +97,7 @@ func (this *UserServices) CommitCommentByOrderId(ctx *gin.Context) {
 
 	// 7. 更新订单状态
 	existingOrder.Status = "completed_reviewed"
+	existingOrder.CommentId = newComment.Id
 	if err := tx.Save(&existingOrder).Error; err != nil {
 		tx.Rollback()
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "订单状态更新失败: " + err.Error()})
@@ -251,9 +252,16 @@ func (this *UserServices) DeleteMyComment(ctx *gin.Context) {
 	}()
 
 	var existingComment models.Comment
+	var existingOrder models.Order
+
+	if result := tx.Model(&models.Order{}).Where("comment_id = ?", commentId).First(&existingOrder); result.Error != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "查询订单数据失败 " + result.Error.Error()})
+		return
+	}
 	if result := tx.Where("id = ?", commentId).First(&existingComment); errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		tx.Rollback()
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "没有找到指定的评论，该评论是否不存在或已被删除。"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "没有找到指定的评论，该评论是否不存在或已被删除。"})
 		return
 	} else if result.Error != nil {
 		tx.Rollback()
@@ -274,6 +282,14 @@ func (this *UserServices) DeleteMyComment(ctx *gin.Context) {
 	if delResult := tx.Delete(&existingComment); delResult.RowsAffected == 0 || delResult.Error != nil {
 		tx.Rollback()
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "删除评论失败: " + delResult.Error.Error()})
+		return
+	}
+
+	existingOrder.Status = "completed_unreviewed"
+
+	if updateOrderResult := tx.Save(&existingOrder); updateOrderResult.Error != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "更新订单数据失败: " + updateOrderResult.Error.Error()})
 		return
 	}
 

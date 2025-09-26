@@ -25,7 +25,7 @@ import (
 //	var list []models.Order
 //}
 
-// GetOrderList GET: /api/v1/trader/order/v1/m_id?is_active=&page=&size=&sort=&order_id=
+// GetOrderList GET: /api/v1/trader/order/:m_id?is_active=&page=&size=&sort=&order_id=
 // `is_active`为false查询所有订单 否则查询活跃订单
 // `sort`取ASC DESC 按照`sort_as`排序 `sort_as`取order_id created_at
 // `order_id`如果不是空需要查询这个订单

@@ -10,8 +10,66 @@ import (
 	"stay-server/internal/dao"
 	"stay-server/internal/models"
 	"stay-server/internal/services/user/dto"
+	"strconv"
 	"time"
 )
+
+// GetUserOrderList GET: /api/user/order/:u_id?page=&size=
+func (this *UserServices) GetUserOrderList(ctx *gin.Context) {
+	userIdStr := ctx.Param("u_id")
+	if userIdStr == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "缺少用户标识"})
+		return
+	}
+	userId, err := strconv.ParseInt(userIdStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "非法用户id " + err.Error()})
+		return
+	}
+
+	// 解析分页参数
+	query := struct {
+		Page int `form:"page" json:"page"`
+		Size int `form:"size" json:"size"`
+	}{}
+
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "分页参数错误 " + err.Error()})
+		return
+	}
+
+	// 默认值
+	if query.Page <= 0 {
+		query.Page = 1
+	}
+	if query.Size <= 0 {
+		query.Size = 10
+	}
+
+	var (
+		orderlist []models.Order
+		total     int64
+	)
+
+	// 统计总数
+	dao.DbDao.Model(&models.Order{}).Where("user_id = ?", userId).Count(&total)
+
+	// 分页查询
+	offset := (query.Page - 1) * query.Size
+	dao.DbDao.Model(&models.Order{}).
+		Where("user_id = ?", userId).
+		Order("created_at DESC").
+		Limit(query.Size).
+		Offset(offset).
+		Find(&orderlist)
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"list":  orderlist,
+		"page":  query.Page,
+		"size":  query.Size,
+		"total": total,
+	})
+}
 
 // GetOrderDetails 获取用户提交的订单细节
 func (this *UserServices) GetOrderDetails(ctx *gin.Context) {
@@ -99,13 +157,13 @@ func (this *UserServices) CommitNewOrder(ctx *gin.Context) {
 			Where("id = ? AND merchant_id = ?", item.GoodsId, postData.MerchantId).
 			First(&goodInfo).Error; err != nil {
 			tx.Rollback()
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("商品不存在: id=%d", item.GoodsId)})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("商品不存在: id=%d", item.GoodsId)})
 			return
 		}
 
 		if int64(goodInfo.Residue) < item.Count {
 			tx.Rollback()
-			ctx.JSON(http.StatusBadRequest, gin.H{
+			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"message": fmt.Sprintf("商品 [%s] 库存不足，仅剩 %d 件", goodInfo.GoodsName, goodInfo.Residue),
 			})
 			return

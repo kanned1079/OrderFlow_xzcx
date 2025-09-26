@@ -15,7 +15,7 @@ func (this *UserServices) FetchGoodsListAsCategory(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "参数错误: " + err.Error()})
 		return
 	}
-	this.utils.Logger.PrintWarn(req)
+	//this.utils.Logger.PrintWarn(req)
 
 	var categories []models.Category
 	if err := dao.DbDao.Where("merchant_id = ?", req.MerchantId).Order("created_at DESC").Find(&categories).Error; err != nil {
@@ -24,9 +24,10 @@ func (this *UserServices) FetchGoodsListAsCategory(ctx *gin.Context) {
 	}
 
 	type ResponseGoodsList struct {
-		Title     string         `json:"title"`
-		CreatedAt time.Time      `json:"created_at"`
-		Goods     []models.Goods `json:"goods"`
+		Title      string         `json:"title"`
+		CategoryId int64          `json:"category_id"`
+		CreatedAt  time.Time      `json:"created_at"`
+		Goods      []models.Goods `json:"goods"`
 	}
 
 	var response []ResponseGoodsList
@@ -45,9 +46,10 @@ func (this *UserServices) FetchGoodsListAsCategory(ctx *gin.Context) {
 		}
 
 		response = append(response, ResponseGoodsList{
-			Title:     cat.Title,
-			CreatedAt: cat.CreatedAt,
-			Goods:     goods,
+			Title:      cat.Title,
+			CategoryId: cat.Id,
+			CreatedAt:  cat.CreatedAt,
+			Goods:      goods,
 		})
 	}
 

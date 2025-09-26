@@ -32,6 +32,7 @@ type Order struct {
 
 	Status        string `json:"status"`
 	FailureReason string `json:"failure_reason"`
+	CommentId     int64  `json:"comment_id"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
