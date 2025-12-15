@@ -11,7 +11,7 @@ func (this *GatewayApp) RegisterUserRoutes(v1 *gin.RouterGroup) {
 	//userGroup := v1.Group("/user")
 	var userService user.UserServices
 
-	userGroup.PATCH("/password/update", userService.UpdateUserPassword)
+	userGroup.PUT("/:u_id/password/update", userService.UpdateUserPassword)
 
 	userGroup.GET("/merchants", userService.FetchMerchants)
 	userGroup.GET("/goods", userService.FetchGoodsListAsCategory)

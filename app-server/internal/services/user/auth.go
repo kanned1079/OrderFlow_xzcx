@@ -10,6 +10,7 @@ import (
 	"stay-server/internal/models"
 	"stay-server/internal/services"
 	"stay-server/internal/services/user/dto"
+	"strconv"
 	"time"
 )
 
@@ -127,13 +128,62 @@ func (this *UserServices) Register(ctx *gin.Context) {
 	})
 }
 
+// UpdateUserPassword 用户修改密码 PATCH: /api/v1/user/:u_id/password/update
 func (this *UserServices) UpdateUserPassword(ctx *gin.Context) {
-	var reqData dto.UserUpdatePasswordRequestDto
-	if err := ctx.ShouldBindJSON(&reqData); err != nil {
+	userIdStr := ctx.Param("u_id")
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"message": "请求格式不合法" + err.Error(),
+			"message": "非法用户Id: " + err.Error(),
 		})
 		return
 	}
 
+	this.utils.Logger.PrintWarn(userId)
+	var reqData dto.UserUpdatePasswordRequestDto
+	if err := ctx.ShouldBindJSON(&reqData); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "请求格式不合法: " + err.Error(),
+		})
+		return
+	}
+
+	this.utils.Logger.PrintWarn(reqData)
+	// 查找用户
+	var user models.User
+	if result := dao.DbDao.First(&user, userId); result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"message": "用户不存在",
+			})
+			return
+		}
+		services.SendErr500(ctx, result.Error.Error())
+		return
+	}
+
+	// 校验旧密码
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(reqData.PreviousPassword)); err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"message": "旧密码错误",
+		})
+		return
+	}
+
+	// 加密新密码
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(reqData.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		services.SendErr500(ctx, "密码加密失败: "+err.Error())
+		return
+	}
+
+	// 更新数据库
+	if err := dao.DbDao.Model(&user).Update("password", string(hashedPassword)).Error; err != nil {
+		services.SendErr500(ctx, "更新密码失败: "+err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "密码更新成功",
+	})
 }

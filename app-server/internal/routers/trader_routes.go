@@ -2,13 +2,14 @@ package routers
 
 import (
 	"github.com/gin-gonic/gin"
+	"stay-server/internal/middlewares"
 	"stay-server/internal/services/trader"
 )
 
 func (this *GatewayApp) RegisterTraderRoutes(v1 *gin.RouterGroup) {
 	var traderService trader.TraderServices
-	//traderGrp := v1.Group("/trader", middlewares.RequireRole("trader"))
-	traderGrp := v1.Group("/trader")
+	traderGrp := v1.Group("/trader", middlewares.RequireRole("trader"))
+	//traderGrp := v1.Group("/trader")
 
 	traderGrp.GET("/goods/:m_id", traderService.GetGoodsList)
 	traderGrp.POST("/goods", traderService.AddNewGoods)
