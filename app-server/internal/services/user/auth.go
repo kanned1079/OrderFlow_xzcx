@@ -80,31 +80,44 @@ func (this *UserServices) Login(ctx *gin.Context) {
 
 }
 
+// Register 用户注册 第一个注册的设置为管理员
 func (this *UserServices) Register(ctx *gin.Context) {
-	//u := utils.Utils{}
 	var reqData dto.UserRegisterRequestDto
 	if err := ctx.ShouldBindJSON(&reqData); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"message": "请求格式不合法" + err.Error(),
+			"message": "请求格式不合法: " + err.Error(),
 		})
 		return
 	}
+	var phoneCount int64
+	dao.DbDao.Model(&models.User{}).
+		Where("phone_number = ?", reqData.PhoneNumber).
+		Count(&phoneCount)
 
-	var count int64
-	dao.DbDao.Model(&models.User{}).Where("phone_number = ?", reqData.PhoneNumber).Count(&count)
-	if count > 0 {
+	if phoneCount > 0 {
 		services.SendErr500(ctx, "该手机号已注册")
 		return
 	}
-	var newUser models.User = models.User{
+	var userCount int64
+	dao.DbDao.Model(&models.User{}).Count(&userCount)
+
+	// 默认角色
+	role := "user"
+	if userCount == 0 {
+		role = "admin"
+	}
+
+	newUser := models.User{
 		Username:    reqData.Username,
 		PhoneNumber: reqData.PhoneNumber,
 		Status:      true,
-		Role:        "user",
+		Role:        role,
 	}
 
-	// todo 加密密码
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(reqData.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword(
+		[]byte(reqData.Password),
+		bcrypt.DefaultCost,
+	)
 	if err != nil {
 		services.SendErr500(ctx, "密码加密失败: "+err.Error())
 		return
